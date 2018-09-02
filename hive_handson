@@ -1,0 +1,140 @@
+create table hospital 
+( hospital_id INT,
+  name STRING,
+  state STRING,
+  country STRING 
+  )
+comment 'hospital table'
+row format delimited
+    fields terminated by ','
+    lines terminated by '\n'
+stored as textfile;
+
+
+100,manipal,karnataka,India
+101,AIMS,Delhi,India
+102,vikram,kerala,India
+
+load data local inpath '/home/cloudera/hive/hospital.txt' into table hospital; 
+
+
+103,manipal,karnataka,India
+104,AIMS,Delhi,India
+105,vikram,kerala,India
+
+106,washington,washington,USA
+107,clone hospital,washington,USA
+108,seven hospital,montanna,USA
+109,clever hospital,california,USA
+
+
+partitioned tables:
+create table hospital_part
+( hospital_id INT,
+  name STRING,
+  state STRING)
+partitioned by ( country STRING)
+row format delimited
+    fields terminated by ','
+    lines terminated by '\n'
+stored as textfile; 
+
+load the partitioned table from non partitioned table:
+insert overwrite table hospital_part partition(country = 'USA')
+select hospital_id, name, state from hospital where country='USA';
+
+
+dynamic partition tables:
+create table hospital_dynpart
+( hospital_id INT,
+  name STRING,
+  state STRING)
+partitioned by (country STRING)
+stored as textfile;
+
+
+load dynamically without specifiying partitioned column values..
+
+insert into hospital_dynpart partition (country)
+select hospital_id, name, state , country from hospital_part; 
+
+set hive.exec.dynamic.partition=nonstrict 
+
+-- the last column (country) is the partitioned column and has to be mentioned.
+
+--  * also works and partitions on  the last column 
+insert into hospital_dynpart partition (country)
+select *  from hospital_part; 
+
+alter table hospital_dynpart1 add partition(country='Canada')
+-- subdirectory will be created 
+
+
+--create external table
+
+create external table hosp_ext
+(
+hospital_id INT,
+  name STRING,
+  state STRING,
+  country STRING 
+  )
+comment 'hospital table'
+row format delimited
+    fields terminated by ','
+    lines terminated by '\n'
+stored as textfile
+location '/hive/hosp/';
+
+
+-- create orc table loading from external table 
+
+create table hosp_orc
+(
+  hospital_id INT,
+  name STRING,
+  state STRING,
+  country STRING 
+)
+comment 'hosp orc table'
+row format delimited 
+    fields terminated by ','
+stored as orc; 
+
+-- load the data from external table hosp_ext 
+insert overwrite table hosp_ext select * from hosp_ext;
+
+-- create external partition table partitioned on country 
+create external table hosp_expart
+(
+ hospital_id INT,
+ name STRING,
+ state STRING)
+ comment 'hosp partitioned external table'
+ PARTITIONED BY (country STRING)
+ row format delimited
+ stored as textfile
+ location '/hive/hosp_expart/';
+
+[cloudera@quickstart hive]$ hadoop fs -mkdir hive/hosp_expart;
+[cloudera@quickstart hive]$ hadoop fs -mkdir hive/hosp_expart/country=USA;
+
+alter table hosp_expart add partition(country='USA')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
